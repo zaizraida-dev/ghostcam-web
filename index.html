@@ -136,9 +136,9 @@
             </div>
             <div class="text-xs text-neutral-300 space-y-2 leading-relaxed">
                 <p>1. <b>Beri Akses Kamera</b> ketika browser meminta izin.</p>
-                <p>2. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk acuan/jejak panduan visual di layar.</p>
+                <p>2. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk panduan visual di layar.</p>
                 <p>3. <b>Zoom In/Out:</b> Gunakan gestur 2 jari (cubit ke dalam/luar) pada area kamera.</p>
-                <p>4. Hasil foto unduhan akan otomatis ter-crop sesuai pilihan rasio (4:3, 9:16, atau 1:1).</p>
+                <p>4. Hasil foto akan otomatis ter-crop presisi sesuai rasio yang dipilih (4:3, 9:16, atau 1:1).</p>
             </div>
             <button onclick="closeModal('infoModal')" class="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-2.5 rounded-xl text-xs transition">
                 Mengerti
@@ -286,7 +286,7 @@
                     newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
                     
                     applyZoom(newZoom);
-                    initialPinchDistance = currentDistance; // Update baseline
+                    initialPinchDistance = currentDistance;
                 }
             }, { passive: true });
 
@@ -314,16 +314,13 @@
             showZoomBadge(currentZoom);
             updateVideoTransform();
 
-            // Coba terapkan native hardware zoom jika didukung perangkat
             if (stream) {
                 const track = stream.getVideoTracks()[0];
                 const capabilities = track.getCapabilities ? track.getCapabilities() : {};
                 if (capabilities.zoom) {
                     try {
                         await track.applyConstraints({ advanced: [{ zoom: currentZoom }] });
-                    } catch (err) {
-                        // fallback ke transform CSS jika gagal
-                    }
+                    } catch (err) {}
                 }
             }
         }
@@ -416,49 +413,60 @@
             }, 1000);
         }
 
-        // Eksekusi Tangkapan Foto dengan Cropping Sesuai Rasio Aktif
+        // Eksekusi Tangkapan Foto Sesuai Kotak Pratinjau (Container Aspect Ratio & Zoom)
         function executeCapture() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
 
-            const videoWidth = videoEl.videoWidth || 1280;
-            const videoHeight = videoEl.videoHeight || 720;
+            const vw = videoEl.videoWidth || 1280;
+            const vh = videoEl.videoHeight || 720;
 
-            // Tentukan rasio target berdasarkan pilihan user
-            let targetAspect;
-            if (currentRatio === '4:3') {
-                targetAspect = 3 / 4; // Portrait 4:3
-            } else if (currentRatio === '9:16') {
-                targetAspect = 9 / 16; // Portrait 9:16
-            } else {
-                targetAspect = 1 / 1; // Square 1:1
-            }
+            // Ambil ukuran & rasio persis dari kotak pratinjau yang sedang aktif di layar
+            const cw = cameraWrapper.clientWidth;
+            const ch = cameraWrapper.clientHeight;
+            const containerAspect = cw / ch;
 
-            const videoAspect = videoWidth / videoHeight;
-            let sx = 0, sy = 0, sw = videoWidth, sh = videoHeight;
+            const videoAspect = vw / vh;
+            let sx = 0, sy = 0, sw = vw, sh = vh;
 
-            // Logika Crop Center (object-fit: cover simulation)
-            if (videoAspect > targetAspect) {
-                sh = videoHeight;
-                sw = videoHeight * targetAspect;
-                sx = (videoWidth - sw) / 2;
+            // Kalkulasi object-fit: cover berdasarkan kotak pratinjau
+            if (videoAspect > containerAspect) {
+                sh = vh;
+                sw = vh * containerAspect;
+                sx = (vw - sw) / 2;
                 sy = 0;
             } else {
-                sw = videoWidth;
-                sh = videoWidth / targetAspect;
+                sw = vw;
+                sh = vw / containerAspect;
                 sx = 0;
-                sy = (videoHeight - sh) / 2;
+                sy = (vh - sh) / 2;
             }
 
-            // Resolusi Output Hasil Foto
+            // Perhitungan Zoom (jika user melakukan zoom in/out)
+            if (currentZoom > 1) {
+                const swZoomed = sw / currentZoom;
+                const shZoomed = sh / currentZoom;
+                sx += (sw - swZoomed) / 2;
+                sy += (sh - shZoomed) / 2;
+                sw = swZoomed;
+                sh = shZoomed;
+            }
+
+            // Resolusi output hasil foto agar tajam
             const outputHeight = 1920;
-            const outputWidth = Math.round(outputHeight * targetAspect);
+            const outputWidth = Math.round(outputHeight * containerAspect);
 
             canvas.width = outputWidth;
             canvas.height = outputHeight;
 
-            // Jika menggunakan kamera depan, sesuaikan orientasi normal (tidak terbalik secara horizontal di hasil foto akhir)
+            context.save();
+            // Jika kamera depan, balikkan secara horizontal agar hasil foto sesuai dengan preview di layar
+            if (facingMode === 'user') {
+                context.translate(canvas.width, 0);
+                context.scale(-1, 1);
+            }
             context.drawImage(videoEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            context.restore();
 
             finalizeAndDownload(canvas);
         }
