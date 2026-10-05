@@ -49,10 +49,10 @@
     <!-- Area Utama Kamera & Overlay -->
     <main class="relative flex-1 flex items-center justify-center overflow-hidden w-full max-w-4xl mx-auto my-auto px-4">
         <!-- Wrapper Kamera dengan Rasio Dinamis (Mendukung Pinch-to-Zoom 2 Jari) -->
-        <div id="cameraWrapper" class="relative w-full max-w-md aspect-[3/4] bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none">
+        <div id="cameraWrapper" class="relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none">
             
-            <!-- Video Stream dari Webcam (Menggunakan object-contain agar tidak terpotong) -->
-            <video id="videoElement" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black transition-transform duration-75"></video>
+            <!-- Video Stream dari Webcam -->
+            <video id="videoElement" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover transition-transform duration-75"></video>
 
             <!-- Gambar Overlay Referensi (Hanya Tampil di Preview, Ikut Zoom) -->
             <div id="overlayContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden hidden">
@@ -186,18 +186,29 @@
             initZoomGestures();
         });
 
-        // Fungsi Membuka Kamera via getUserMedia API
+        // Fungsi Membuka Kamera via getUserMedia API dengan Resolusi Sesuai Rasio
         async function initCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
 
             try {
+                let targetWidth = 1080;
+                let targetHeight = 1440; // Default 4:3 (3:4 portrait)
+
+                if (currentRatio === '9:16') {
+                    targetWidth = 1080;
+                    targetHeight = 1920;
+                } else if (currentRatio === '1:1') {
+                    targetWidth = 1080;
+                    targetHeight = 1080;
+                }
+
                 const constraints = {
                     video: {
                         facingMode: facingMode,
-                        width: { ideal: 1080 },
-                        height: { ideal: 1920 }
+                        width: { ideal: targetWidth },
+                        height: { ideal: targetHeight }
                     },
                     audio: false
                 };
@@ -205,7 +216,6 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoEl.srcObject = stream;
                 
-                // Reset zoom saat ganti kamera
                 currentZoom = 1;
                 updateVideoTransform();
 
@@ -215,7 +225,7 @@
             } catch (error) {
                 console.error("Gagal mengakses kamera:", error);
                 showCustomAlert("Akses Kamera Ditolak", "Pastikan Anda memberikan izin akses kamera pada browser atau gunakan HTTPS/Localhost.");
-                cameraPlaceholder.classList.remove('hidden');
+                cameraPlaceholder.classList.add('hidden');
             }
         }
 
@@ -247,7 +257,6 @@
             cameraWrapper.addEventListener('touchend', (e) => {
                 if (e.touches.length < 2) {
                     initialTouchDistance = null;
-                    // Sembunyikan indikator zoom setelah beberapa detik jika kembali ke 1x
                     if (currentZoom <= 1.05) {
                         currentZoom = 1;
                         updateVideoTransform();
@@ -282,21 +291,21 @@
 
         // Putar Pilihan Rasio Aspek (4:3 -> 9:16 -> 1:1)
         function cycleRatio() {
-            currentZoom = 1; // Reset zoom saat ganti rasio
+            currentZoom = 1; 
             zoomIndicator.classList.add('hidden');
 
             if (currentRatio === '4:3') {
                 currentRatio = '9:16';
-                cameraWrapper.className = "relative w-full max-w-sm aspect-[9/16] bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
+                cameraWrapper.className = "relative w-full max-w-sm aspect-[9/16] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             } else if (currentRatio === '9:16') {
                 currentRatio = '1:1';
-                cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
+                cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             } else {
                 currentRatio = '4:3';
-                cameraWrapper.className = "relative w-full max-w-md aspect-[3/4] bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
+                cameraWrapper.className = "relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             }
             document.getElementById('ratioText').innerText = currentRatio;
-            updateVideoTransform();
+            initCamera(); // Memuat ulang kamera agar resolusi stream mengikuti rasio baru secara natural
         }
 
         // Putar Pilihan Timer (OFF -> 3s -> 5s)
@@ -403,7 +412,6 @@
                 context.scale(-1, 1);
             }
 
-            // Jika sedang zoom, potong bagian video yang sesuai dengan tingkat zoom
             if (currentZoom > 1) {
                 const cropWidth = videoWidth / currentZoom;
                 const cropHeight = videoHeight / currentZoom;
