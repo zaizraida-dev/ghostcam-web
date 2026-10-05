@@ -89,7 +89,7 @@
         </div>
 
         <!-- Panel Kontrol Overlay (Transparansi & Tombol Mode Geser/Skala) -->
-        <div id="opacityControlPanel" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-neutral-900/90 border border-neutral-700 backdrop-blur-md px-4 py-3 rounded-2xl flex flex-col gap-2.5 z-25 shadow-xl hidden w-[90%] max-w-xs">
+        <div id="opacityControlPanel" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-neutral-900/90 border border-neutral-700 backdrop-blur-md px-4 py-3 rounded-2xl flex flex-col gap-2.5 z-30 shadow-xl hidden w-[90%] max-w-xs">
             <div class="flex items-center justify-between border-b border-neutral-800 pb-2">
                 <span class="text-[11px] uppercase tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-layer-group"></i> Pengaturan Overlay
@@ -181,22 +181,19 @@
 
     <!-- Logika JavaScript Web App Kamera & Overlay -->
     <script>
-        // Variabel Status Aplikasi
         let stream = null;
-        let facingMode = 'user'; // 'user' (depan) atau 'environment' (belakang)
-        let currentRatio = '4:3'; // '4:3', '9:16', '1:1'
-        let timerSeconds = 0; // 0, 3, 5
+        let facingMode = 'user';
+        let currentRatio = '4:3';
+        let timerSeconds = 0;
         let isCountingDown = false;
         let overlayDataUrl = null;
 
-        // Variabel Zoom & Pinch Kamera
         let currentZoom = 1;
         let minZoom = 1;
         let maxZoom = 4;
         let initialPinchDistance = null;
         let zoomTimeout = null;
 
-        // Variabel Posisi, Skala, & Edit Mode Overlay
         let isOverlayEditable = false;
         let overlayX = 0;
         let overlayY = 0;
@@ -217,14 +214,12 @@
         const removeOverlayBtn = document.getElementById('removeOverlayBtn');
         const zoomBadge = document.getElementById('zoomBadge');
 
-        // Inisialisasi Kamera & Touch Handler saat Halaman Dimuat
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
             setupPinchZoom();
             setupOverlayInteractions();
         });
 
-        // Fungsi Membuka Kamera via getUserMedia API
         async function initCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
@@ -266,14 +261,12 @@
             }
         }
 
-        // Toggle Kamera Depan / Belakang
         function toggleCameraFacing() {
             facingMode = facingMode === 'user' ? 'environment' : 'user';
             document.getElementById('facingText').innerText = facingMode === 'user' ? 'Depan' : 'Belakang';
             initCamera();
         }
 
-        // Putar Pilihan Rasio Aspek (4:3 -> 9:16 -> 1:1)
         function cycleRatio() {
             if (currentRatio === '4:3') {
                 currentRatio = '9:16';
@@ -288,7 +281,6 @@
             document.getElementById('ratioText').innerText = currentRatio;
         }
 
-        // Putar Pilihan Timer (OFF -> 3s -> 5s)
         function cycleTimer() {
             if (timerSeconds === 0) {
                 timerSeconds = 3;
@@ -300,10 +292,9 @@
             document.getElementById('timerText').innerText = timerSeconds === 0 ? 'OFF' : `${timerSeconds}s`;
         }
 
-        // Pengaturan Touch & Pinch to Zoom Kamera
         function setupPinchZoom() {
             cameraWrapper.addEventListener('touchstart', (e) => {
-                if (isOverlayEditable) return; // Jika mode edit overlay aktif, abaikan zoom kamera
+                if (isOverlayEditable) return;
                 if (e.touches.length === 2) {
                     initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
                 }
@@ -372,7 +363,6 @@
             }, 1200);
         }
 
-        // Toggle Mode Geser / Kunci Overlay
         function toggleOverlayEditMode() {
             isOverlayEditable = !isOverlayEditable;
             const btn = document.getElementById('toggleEditOverlayBtn');
@@ -394,7 +384,6 @@
             }
         }
 
-        // Pengaturan Interaksi Touch & Drag untuk Overlay
         function setupOverlayInteractions() {
             let activeTouches = 0;
 
@@ -445,7 +434,6 @@
                 }
             }, { passive: true });
 
-            // Dukungan Mouse untuk Desktop / Laptop Testing
             let isMouseDragging = false;
             let mouseStartX = 0;
             let mouseStartY = 0;
@@ -481,7 +469,6 @@
             overlayImage.style.transform = `translate(${overlayX}px, ${overlayY}px) scale(${overlayScale})`;
         }
 
-        // Upload Gambar Overlay dari Perangkat
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -491,7 +478,6 @@
                 overlayDataUrl = e.target.result;
                 overlayImage.src = overlayDataUrl;
                 
-                // Reset posisi ke tengah saat gambar baru dimuat
                 overlayX = 0;
                 overlayY = 0;
                 overlayScale = 1;
@@ -506,7 +492,6 @@
             reader.readAsDataURL(file);
         }
 
-        // Hapus / Reset Gambar Overlay
         function removeOverlay() {
             overlayDataUrl = null;
             overlayImage.src = "";
@@ -527,13 +512,11 @@
             removeOverlayBtn.classList.add('opacity-50', 'pointer-events-none');
         }
 
-        // Ubah Transparansi Overlay Secara Real-time
         function updateOpacity(val) {
             overlayImage.style.opacity = val;
             document.getElementById('opacityValue').innerText = `${Math.round(val * 100)}%`;
         }
 
-        // Proses Tombol Jepret dengan Dukungan Timer
         function startCaptureProcess() {
             if (!stream) {
                 showCustomAlert("Kamera Belum Siap", "Mohon tunggu hingga kamera aktif sepenuhnya.");
@@ -548,7 +531,6 @@
             }
         }
 
-        // Fungsi Hitung Mundur (Countdown)
         function runCountdown(seconds, callback) {
             isCountingDown = true;
             const countdownOverlay = document.getElementById('countdownOverlay');
@@ -571,7 +553,6 @@
             }, 1000);
         }
 
-        // Eksekusi Tangkapan Foto Sesuai Kotak Pratinjau (Termasuk Overlay)
         function executeCapture() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -613,7 +594,6 @@
             canvas.width = outputWidth;
             canvas.height = outputHeight;
 
-            // 1. Gambar Stream Kamera
             context.save();
             if (facingMode === 'user') {
                 context.translate(canvas.width, 0);
@@ -622,7 +602,6 @@
             context.drawImage(videoEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
             context.restore();
 
-            // 2. Gambar Overlay ke Canvas (jika ada) sesuai posisi, skala, & transparansi
             if (overlayDataUrl && overlayImage.complete && overlayImage.naturalWidth > 0) {
                 context.save();
                 context.globalAlpha = parseFloat(document.getElementById('opacityRange').value);
@@ -656,7 +635,6 @@
             finalizeAndSaveToGallery(canvas);
         }
 
-        // Simpan ke galeri menggunakan Web Share API / Download Fallback
         function finalizeAndSaveToGallery(canvas) {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `CamCapture-${currentRatio.replace(':', '-')}-${timestamp}.png`;
@@ -692,7 +670,6 @@
             }, 'image/png');
         }
 
-        // Pengelolaan Modal Kustom
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
         }
