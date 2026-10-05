@@ -222,7 +222,10 @@
                     minZoom = 1;
                     maxZoom = 4;
                 }
-                currentZoom = minZoom;
+                
+                // Perbaikan: Set default ke 1.0x (normal) agar tidak otomatis ke 0.5x / zoom out
+                currentZoom = 1; 
+                
                 updateVideoTransform();
 
                 videoEl.onloadedmetadata = () => {
