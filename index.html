@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplikasi Kamera Overlay Pro</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -15,30 +18,29 @@
             transform-origin: center center;
             transition: transform 0.05s linear;
         }
-        #overlayWrapper {
+        #overlayImage {
             transform-origin: center center;
-            touch-action: none;
-            cursor: grab;
-        }
-        #overlayWrapper:active {
-            cursor: grabbing;
+            will-change: transform;
         }
     </style>
 </head>
 <body class="bg-neutral-950 text-white h-[100dvh] w-screen overflow-hidden flex flex-col justify-between select-none">
 
+    <!-- Bagian Atas: Kontrol Kamera & Pengaturan -->
     <header class="w-full z-20 bg-gradient-to-b from-black/80 to-transparent p-4 flex flex-col gap-3">
         <div class="flex items-center justify-between max-w-lg mx-auto w-full">
             <h1 class="text-sm font-semibold tracking-wider text-neutral-300 uppercase flex items-center gap-2">
                 <i class="fa-solid fa-camera-retro text-amber-400"></i> CamOverlay Pro
             </h1>
             <div class="flex items-center gap-2">
+                <!-- Tombol Panduan / Info -->
                 <button onclick="openModal('infoModal')" class="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 px-3 py-1.5 rounded-full text-xs font-medium border border-neutral-700 backdrop-blur-md transition">
                     <i class="fa-solid fa-circle-question"></i> Info
                 </button>
             </div>
         </div>
 
+        <!-- Menu Pilihan Atas (Timer, Facing, Rasio) -->
         <div class="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar py-1">
             <button onclick="cycleRatio()" id="ratioBtn" class="bg-neutral-900/80 hover:bg-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-full border border-neutral-700 whitespace-nowrap backdrop-blur-md transition">
                 Rasio: <span id="ratioText">4:3</span>
@@ -52,38 +54,31 @@
         </div>
     </header>
 
+    <!-- Area Utama Kamera & Overlay -->
     <main class="relative flex-1 flex items-center justify-center overflow-hidden w-full max-w-4xl mx-auto my-auto">
         
-        <!-- Indikator Zoom Kamera -->
+        <!-- Badge Indikator Zoom (Muncul saat Pinch Zoom) -->
         <div id="zoomBadge" class="absolute top-4 right-4 bg-neutral-900/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-amber-400 border border-neutral-700 z-30 transition-opacity duration-300 opacity-0 pointer-events-none shadow-lg">
             1.0x
         </div>
 
-        <!-- Tombol Kontrol Zoom Kamera Khusus (+ dan -) -->
-        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-30">
-            <button onclick="adjustCameraZoom(0.2)" class="w-9 h-9 rounded-full bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-700 text-white font-bold flex items-center justify-center backdrop-blur-md shadow-lg transition active:scale-90" title="Zoom In Kamera">
-                <i class="fa-solid fa-plus text-xs"></i>
-            </button>
-            <button onclick="adjustCameraZoom(-0.2)" class="w-9 h-9 rounded-full bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-700 text-white font-bold flex items-center justify-center backdrop-blur-md shadow-lg transition active:scale-90" title="Zoom Out Kamera">
-                <i class="fa-solid fa-minus text-xs"></i>
-            </button>
-        </div>
-
-        <div id="cameraWrapper" class="relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center">
+        <!-- Wrapper Kamera dengan Rasio Dinamis & Dukungan Touch Zoom -->
+        <div id="cameraWrapper" class="relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center touch-none">
             
-            <video id="videoElement" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover pointer-events-none"></video>
+            <!-- Video Stream dari Webcam -->
+            <video id="videoElement" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
 
-            <!-- Overlay Container & Wrapper khusus untuk sentuhan geser & cubit -->
-            <div id="overlayContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden hidden">
-                <div id="overlayWrapper" class="absolute inset-0 flex items-center justify-center pointer-events-auto">
-                    <img id="overlayImage" src="" alt="Overlay" class="max-w-full max-h-full object-contain transition-opacity duration-150 select-none pointer-events-none" style="opacity: 0.5;">
-                </div>
+            <!-- Gambar Overlay Referensi (Bisa digeser & diperbesar saat mode edit aktif) -->
+            <div id="overlayContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden hidden z-10">
+                <img id="overlayImage" src="" alt="Overlay" class="max-w-full max-h-full object-contain transition-opacity duration-150" style="opacity: 0.5;">
             </div>
 
+            <!-- Hitung Mundur (Countdown Overlay) -->
             <div id="countdownOverlay" class="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center hidden z-30">
                 <span id="countdownNumber" class="text-8xl font-black text-white drop-shadow-lg scale-125 transition-transform duration-300">3</span>
             </div>
 
+            <!-- Placeholder Jika Kamera Belum Siap / Error -->
             <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-neutral-900 text-neutral-400">
                 <i class="fa-solid fa-camera text-4xl mb-3 text-neutral-600 animate-pulse"></i>
                 <p class="text-sm font-medium">Memuat Kamera...</p>
@@ -93,20 +88,32 @@
             </div>
         </div>
 
-        <!-- Panel Transparansi & Reset Overlay -->
-        <div id="opacityControlPanel" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-neutral-900/90 border border-neutral-700 backdrop-blur-md px-4 py-2.5 rounded-full flex items-center gap-3 z-20 shadow-lg hidden">
-            <span class="text-[10px] uppercase tracking-wider font-bold text-neutral-400">Transparansi</span>
-            <input type="range" id="opacityRange" min="0.1" max="1" step="0.05" value="0.5" class="w-24 accent-amber-500 cursor-pointer" oninput="updateOpacity(this.value)">
-            <span id="opacityValue" class="text-xs font-bold text-amber-400 w-8 text-right">50%</span>
-            <button onclick="resetOverlayTransform()" title="Reset Posisi & Ukuran Overlay" class="bg-neutral-800 hover:bg-neutral-700 text-amber-400 px-2.5 py-1 rounded-full text-xs font-semibold border border-neutral-700 transition">
-                <i class="fa-solid fa-arrows-rotate"></i> Reset
-            </button>
+        <!-- Panel Kontrol Overlay (Transparansi & Tombol Mode Geser/Skala) -->
+        <div id="opacityControlPanel" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-neutral-900/90 border border-neutral-700 backdrop-blur-md px-4 py-3 rounded-2xl flex flex-col gap-2.5 z-25 shadow-xl hidden w-[90%] max-w-xs">
+            <div class="flex items-center justify-between border-b border-neutral-800 pb-2">
+                <span class="text-[11px] uppercase tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group"></i> Pengaturan Overlay
+                </span>
+                <!-- Tombol Toggle Mode Geser & Skala Overlay -->
+                <button id="toggleEditOverlayBtn" onclick="toggleOverlayEditMode()" class="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-3 py-1.5 rounded-xl text-xs font-semibold border border-neutral-700 transition flex items-center gap-1.5 shadow-sm">
+                    <i id="editModeIcon" class="fa-solid fa-lock"></i>
+                    <span id="editModeText">Kunci Posisi</span>
+                </button>
+            </div>
+            
+            <div class="flex items-center gap-3 pt-0.5">
+                <span class="text-[10px] uppercase tracking-wider font-bold text-neutral-400">Transparansi</span>
+                <input type="range" id="opacityRange" min="0.1" max="1" step="0.05" value="0.5" class="flex-1 accent-amber-500 cursor-pointer" oninput="updateOpacity(this.value)">
+                <span id="opacityValue" class="text-xs font-bold text-amber-400 w-9 text-right">50%</span>
+            </div>
         </div>
     </main>
 
+    <!-- Bagian Bawah: Tombol Aksi Utama -->
     <footer class="w-full z-20 bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-4 pb-8 px-6">
         <div class="max-w-md mx-auto flex items-center justify-around">
             
+            <!-- Tombol Pilih Gambar Overlay -->
             <label class="flex flex-col items-center gap-1 cursor-pointer group">
                 <div class="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 group-hover:bg-neutral-700 group-hover:border-neutral-600 transition shadow-md">
                     <i class="fa-solid fa-image text-lg"></i>
@@ -115,12 +122,14 @@
                 <input type="file" id="imageUploader" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
             </label>
 
+            <!-- Tombol Jepret Foto Utama -->
             <button onclick="startCaptureProcess()" id="captureBtn" class="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition relative group">
                 <div class="w-16 h-16 rounded-full border-2 border-neutral-900 bg-white flex items-center justify-center group-hover:bg-neutral-100">
                     <i class="fa-solid fa-camera text-neutral-900 text-2xl"></i>
                 </div>
             </button>
 
+            <!-- Tombol Hapus Overlay / Reset -->
             <button onclick="removeOverlay()" id="removeOverlayBtn" class="flex flex-col items-center gap-1 cursor-pointer group opacity-50 pointer-events-none transition" disabled>
                 <div class="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-red-400 group-hover:bg-neutral-700 group-hover:border-neutral-600 transition shadow-md">
                     <i class="fa-solid fa-trash text-lg"></i>
@@ -131,6 +140,7 @@
         </div>
     </footer>
 
+    <!-- Modal Informasi Panduan -->
     <div id="infoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl flex flex-col gap-4">
             <div class="flex items-center justify-between">
@@ -142,10 +152,10 @@
                 </button>
             </div>
             <div class="text-xs text-neutral-300 space-y-2 leading-relaxed">
-                <p>1. <b>Beri Akses Kamera</b> saat browser meminta izin.</p>
-                <p>2. <b>Pilih Gambar Overlay</b> transparan untuk panduan visual di layar.</p>
-                <p>3. <b>Geser & Perbesar/Kecil Overlay:</b> Sentuh & geser gambar overlay dengan 1 jari untuk memindahkannya, atau cubit dengan 2 jari untuk memperbesar/memperkecil (pinch-to-zoom).</p>
-                <p>4. <b>Zoom Kamera:</b> Gunakan tombol khusus (+) dan (-) di sisi kanan layar untuk memperbesar/memperkecil tampilan kamera.</p>
+                <p>1. <b>Beri Akses Kamera</b> ketika browser meminta izin.</p>
+                <p>2. <b>Pilih Gambar Overlay</b> untuk panduan visual di layar.</p>
+                <p>3. <b>Atur Posisi & Ukuran:</b> Tekan tombol <b>"Kunci Posisi"</b> jadi <b>"Mode Geser: ON"</b>, lalu geser dengan 1 jari atau cubit dengan 2 jari pada overlay.</p>
+                <p>4. <b>Kunci Kembali:</b> Tekan tombol kunci jika posisi sudah pas agar aman saat menjepret foto.</p>
             </div>
             <button onclick="closeModal('infoModal')" class="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-2.5 rounded-xl text-xs transition">
                 Mengerti
@@ -153,6 +163,7 @@
         </div>
     </div>
 
+    <!-- Modal Pesan/Alert Kustom -->
     <div id="alertModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col items-center text-center gap-4">
             <div id="alertIcon" class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
@@ -168,43 +179,52 @@
         </div>
     </div>
 
+    <!-- Logika JavaScript Web App Kamera & Overlay -->
     <script>
+        // Variabel Status Aplikasi
         let stream = null;
-        let facingMode = 'user';
-        let currentRatio = '4:3';
-        let timerSeconds = 0;
+        let facingMode = 'user'; // 'user' (depan) atau 'environment' (belakang)
+        let currentRatio = '4:3'; // '4:3', '9:16', '1:1'
+        let timerSeconds = 0; // 0, 3, 5
         let isCountingDown = false;
         let overlayDataUrl = null;
 
-        let currentCameraZoom = 1;
+        // Variabel Zoom & Pinch Kamera
+        let currentZoom = 1;
         let minZoom = 1;
         let maxZoom = 4;
+        let initialPinchDistance = null;
         let zoomTimeout = null;
 
-        // Overlay Transform State (Independent Pan & Pinch Scale)
+        // Variabel Posisi, Skala, & Edit Mode Overlay
+        let isOverlayEditable = false;
         let overlayX = 0;
         let overlayY = 0;
         let overlayScale = 1;
-        let isDraggingOverlay = false;
-        let startX = 0, startY = 0;
-        let initialPinchDist = null;
-        let initialPinchScale = 1;
+        let initialTouchX = 0;
+        let initialTouchY = 0;
+        let startOverlayX = 0;
+        let startOverlayY = 0;
+        let initialOverlayPinchDist = null;
+        let startOverlayScale = 1;
 
         const videoEl = document.getElementById('videoElement');
         const cameraWrapper = document.getElementById('cameraWrapper');
         const cameraPlaceholder = document.getElementById('cameraPlaceholder');
         const overlayContainer = document.getElementById('overlayContainer');
-        const overlayWrapper = document.getElementById('overlayWrapper');
         const overlayImage = document.getElementById('overlayImage');
         const opacityControlPanel = document.getElementById('opacityControlPanel');
         const removeOverlayBtn = document.getElementById('removeOverlayBtn');
         const zoomBadge = document.getElementById('zoomBadge');
 
+        // Inisialisasi Kamera & Touch Handler saat Halaman Dimuat
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
-            setupOverlayGestures();
+            setupPinchZoom();
+            setupOverlayInteractions();
         });
 
+        // Fungsi Membuka Kamera via getUserMedia API
         async function initCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
@@ -233,7 +253,7 @@
                     maxZoom = 4;
                 }
                 
-                currentCameraZoom = 1; 
+                currentZoom = 1; 
                 updateVideoTransform();
 
                 videoEl.onloadedmetadata = () => {
@@ -246,26 +266,29 @@
             }
         }
 
+        // Toggle Kamera Depan / Belakang
         function toggleCameraFacing() {
             facingMode = facingMode === 'user' ? 'environment' : 'user';
             document.getElementById('facingText').innerText = facingMode === 'user' ? 'Depan' : 'Belakang';
             initCamera();
         }
 
+        // Putar Pilihan Rasio Aspek (4:3 -> 9:16 -> 1:1)
         function cycleRatio() {
             if (currentRatio === '4:3') {
                 currentRatio = '9:16';
-                cameraWrapper.className = "relative w-full max-w-xs aspect-[9/16] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
+                cameraWrapper.className = "relative w-full max-w-xs aspect-[9/16] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             } else if (currentRatio === '9:16') {
                 currentRatio = '1:1';
-                cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
+                cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             } else {
                 currentRatio = '4:3';
-                cameraWrapper.className = "relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
+                cameraWrapper.className = "relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             }
             document.getElementById('ratioText').innerText = currentRatio;
         }
 
+        // Putar Pilihan Timer (OFF -> 3s -> 5s)
         function cycleTimer() {
             if (timerSeconds === 0) {
                 timerSeconds = 3;
@@ -277,15 +300,51 @@
             document.getElementById('timerText').innerText = timerSeconds === 0 ? 'OFF' : `${timerSeconds}s`;
         }
 
-        function adjustCameraZoom(delta) {
-            let newZoom = currentCameraZoom + delta;
-            newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
-            applyCameraZoom(newZoom);
+        // Pengaturan Touch & Pinch to Zoom Kamera
+        function setupPinchZoom() {
+            cameraWrapper.addEventListener('touchstart', (e) => {
+                if (isOverlayEditable) return; // Jika mode edit overlay aktif, abaikan zoom kamera
+                if (e.touches.length === 2) {
+                    initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+                }
+            }, { passive: true });
+
+            cameraWrapper.addEventListener('touchmove', (e) => {
+                if (isOverlayEditable) return;
+                if (e.touches.length === 2 && initialPinchDistance !== null) {
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scaleFactor = currentDistance / initialPinchDistance;
+                    
+                    let newZoom = currentZoom * scaleFactor;
+                    newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+                    
+                    applyZoom(newZoom);
+                    initialPinchDistance = currentDistance;
+                }
+            }, { passive: true });
+
+            cameraWrapper.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    initialPinchDistance = null;
+                }
+            }, { passive: true });
+
+            cameraWrapper.addEventListener('wheel', (e) => {
+                if (isOverlayEditable) return;
+                e.preventDefault();
+                let newZoom = currentZoom + (e.deltaY < 0 ? 0.2 : -0.2);
+                newZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+                applyZoom(newZoom);
+            }, { passive: false });
         }
 
-        async function applyCameraZoom(zoomValue) {
-            currentCameraZoom = zoomValue;
-            showZoomBadge(currentCameraZoom);
+        function getDistance(t1, t2) {
+            return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        }
+
+        async function applyZoom(zoomValue) {
+            currentZoom = zoomValue;
+            showZoomBadge(currentZoom);
             updateVideoTransform();
 
             if (stream) {
@@ -293,7 +352,7 @@
                 const capabilities = track.getCapabilities ? track.getCapabilities() : {};
                 if (capabilities.zoom) {
                     try {
-                        await track.applyConstraints({ advanced: [{ zoom: currentCameraZoom }] });
+                        await track.applyConstraints({ advanced: [{ zoom: currentZoom }] });
                     } catch (err) {}
                 }
             }
@@ -301,7 +360,7 @@
 
         function updateVideoTransform() {
             const mirror = facingMode === 'user' ? 'scaleX(-1)' : '';
-            videoEl.style.transform = `${mirror} scale(${currentCameraZoom})`;
+            videoEl.style.transform = `${mirror} scale(${currentZoom})`;
         }
 
         function showZoomBadge(zoom) {
@@ -313,89 +372,116 @@
             }, 1200);
         }
 
-        function setupOverlayGestures() {
-            // Touch Start
-            overlayWrapper.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                if (e.touches.length === 1) {
-                    isDraggingOverlay = true;
-                    startX = e.touches[0].clientX - overlayX;
-                    startY = e.touches[0].clientY - overlayY;
-                } else if (e.touches.length === 2) {
-                    isDraggingOverlay = false;
-                    initialPinchDist = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    initialPinchScale = overlayScale;
-                }
-            }, { passive: false });
+        // Toggle Mode Geser / Kunci Overlay
+        function toggleOverlayEditMode() {
+            isOverlayEditable = !isOverlayEditable;
+            const btn = document.getElementById('toggleEditOverlayBtn');
+            const icon = document.getElementById('editModeIcon');
+            const text = document.getElementById('editModeText');
 
-            // Touch Move
-            overlayWrapper.addEventListener('touchmove', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                if (e.touches.length === 1 && isDraggingOverlay) {
-                    overlayX = e.touches[0].clientX - startX;
-                    overlayY = e.touches[0].clientY - startY;
-                    updateOverlayTransform();
-                } else if (e.touches.length === 2 && initialPinchDist !== null) {
-                    const currentDist = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    const scaleFactor = currentDist / initialPinchDist;
-                    overlayScale = Math.max(0.2, Math.min(5, initialPinchScale * scaleFactor));
-                    updateOverlayTransform();
-                }
-            }, { passive: false });
+            if (isOverlayEditable) {
+                btn.className = "bg-amber-500 hover:bg-amber-400 text-neutral-950 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md";
+                icon.className = "fa-solid fa-unlock-keyhole";
+                text.innerText = "Mode Geser: ON";
+                overlayContainer.style.pointerEvents = "auto";
+                showCustomAlert("Mode Geser Aktif", "Geser overlay dengan 1 jari atau cubit dengan 2 jari untuk memperbesar/memperkecil.", "success");
+            } else {
+                btn.className = "bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-3 py-1.5 rounded-xl text-xs font-semibold border border-neutral-700 transition flex items-center gap-1.5 shadow-sm";
+                icon.className = "fa-solid fa-lock";
+                text.innerText = "Kunci Posisi";
+                overlayContainer.style.pointerEvents = "none";
+                showCustomAlert("Overlay Dikunci", "Posisi dan ukuran overlay telah dikunci dengan aman.", "success");
+            }
+        }
 
-            // Touch End
-            overlayWrapper.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-                if (e.touches.length < 1) isDraggingOverlay = false;
-                if (e.touches.length < 2) initialPinchDist = null;
+        // Pengaturan Interaksi Touch & Drag untuk Overlay
+        function setupOverlayInteractions() {
+            let activeTouches = 0;
+
+            overlayContainer.addEventListener('touchstart', (e) => {
+                if (!isOverlayEditable) return;
+                activeTouches = e.touches.length;
+                if (activeTouches === 1) {
+                    initialTouchX = e.touches[0].clientX;
+                    initialTouchY = e.touches[0].clientY;
+                    startOverlayX = overlayX;
+                    startOverlayY = overlayY;
+                } else if (activeTouches === 2) {
+                    initialOverlayPinchDist = getDistance(e.touches[0], e.touches[1]);
+                    startOverlayScale = overlayScale;
+                }
             }, { passive: true });
 
-            // Mouse support for desktop dragging
-            let isMouseDown = false;
-            overlayWrapper.addEventListener('mousedown', (e) => {
-                isMouseDown = true;
-                startX = e.clientX - overlayX;
-                startY = e.clientY - overlayY;
+            overlayContainer.addEventListener('touchmove', (e) => {
+                if (!isOverlayEditable) return;
+                if (e.touches.length === 1 && activeTouches === 1) {
+                    const dx = e.touches[0].clientX - initialTouchX;
+                    const dy = e.touches[0].clientY - initialTouchY;
+                    overlayX = startOverlayX + dx;
+                    overlayY = startOverlayY + dy;
+                    updateOverlayTransform();
+                } else if (e.touches.length === 2) {
+                    const currentDist = getDistance(e.touches[0], e.touches[1]);
+                    if (initialOverlayPinchDist && initialOverlayPinchDist > 0) {
+                        const factor = currentDist / initialOverlayPinchDist;
+                        let newScale = startOverlayScale * factor;
+                        overlayScale = Math.max(0.2, Math.min(5, newScale));
+                        updateOverlayTransform();
+                    }
+                }
+            }, { passive: true });
+
+            overlayContainer.addEventListener('touchend', (e) => {
+                if (!isOverlayEditable) return;
+                activeTouches = e.touches.length;
+                if (activeTouches < 2) {
+                    initialOverlayPinchDist = null;
+                }
+                if (activeTouches === 1) {
+                    initialTouchX = e.touches[0].clientX;
+                    initialTouchY = e.touches[0].clientY;
+                    startOverlayX = overlayX;
+                    startOverlayY = overlayY;
+                }
+            }, { passive: true });
+
+            // Dukungan Mouse untuk Desktop / Laptop Testing
+            let isMouseDragging = false;
+            let mouseStartX = 0;
+            let mouseStartY = 0;
+
+            overlayContainer.addEventListener('mousedown', (e) => {
+                if (!isOverlayEditable) return;
+                isMouseDragging = true;
+                mouseStartX = e.clientX - overlayX;
+                mouseStartY = e.clientY - overlayY;
             });
 
             window.addEventListener('mousemove', (e) => {
-                if (!isMouseDown) return;
-                overlayX = e.clientX - startX;
-                overlayY = e.clientY - startY;
+                if (!isOverlayEditable || !isMouseDragging) return;
+                overlayX = e.clientX - mouseStartX;
+                overlayY = e.clientY - mouseStartY;
                 updateOverlayTransform();
             });
 
             window.addEventListener('mouseup', () => {
-                isMouseDown = false;
+                isMouseDragging = false;
             });
 
-            // Mouse wheel for scaling overlay on desktop
-            overlayWrapper.addEventListener('wheel', (e) => {
+            overlayContainer.addEventListener('wheel', (e) => {
+                if (!isOverlayEditable) return;
                 e.preventDefault();
-                let newScale = overlayScale + (e.deltaY < 0 ? 0.1 : -0.1);
-                overlayScale = Math.max(0.2, Math.min(5, newScale));
+                let delta = e.deltaY < 0 ? 0.1 : -0.1;
+                overlayScale = Math.max(0.2, Math.min(5, overlayScale + delta));
                 updateOverlayTransform();
             }, { passive: false });
         }
 
         function updateOverlayTransform() {
-            overlayWrapper.style.transform = `translate(${overlayX}px, ${overlayY}px) scale(${overlayScale})`;
+            overlayImage.style.transform = `translate(${overlayX}px, ${overlayY}px) scale(${overlayScale})`;
         }
 
-        function resetOverlayTransform() {
-            overlayX = 0;
-            overlayY = 0;
-            overlayScale = 1;
-            updateOverlayTransform();
-        }
-
+        // Upload Gambar Overlay dari Perangkat
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -404,33 +490,50 @@
             reader.onload = function(e) {
                 overlayDataUrl = e.target.result;
                 overlayImage.src = overlayDataUrl;
+                
+                // Reset posisi ke tengah saat gambar baru dimuat
+                overlayX = 0;
+                overlayY = 0;
+                overlayScale = 1;
+                updateOverlayTransform();
+
                 overlayContainer.classList.remove('hidden');
                 opacityControlPanel.classList.remove('hidden');
                 
-                resetOverlayTransform();
                 removeOverlayBtn.removeAttribute('disabled');
                 removeOverlayBtn.classList.remove('opacity-50', 'pointer-events-none');
             };
             reader.readAsDataURL(file);
         }
 
+        // Hapus / Reset Gambar Overlay
         function removeOverlay() {
             overlayDataUrl = null;
             overlayImage.src = "";
             overlayContainer.classList.add('hidden');
             opacityControlPanel.classList.add('hidden');
             document.getElementById('imageUploader').value = "";
-            resetOverlayTransform();
+            
+            overlayX = 0;
+            overlayY = 0;
+            overlayScale = 1;
+            updateOverlayTransform();
+
+            if (isOverlayEditable) {
+                toggleOverlayEditMode();
+            }
             
             removeOverlayBtn.setAttribute('disabled', 'true');
             removeOverlayBtn.classList.add('opacity-50', 'pointer-events-none');
         }
 
+        // Ubah Transparansi Overlay Secara Real-time
         function updateOpacity(val) {
             overlayImage.style.opacity = val;
             document.getElementById('opacityValue').innerText = `${Math.round(val * 100)}%`;
         }
 
+        // Proses Tombol Jepret dengan Dukungan Timer
         function startCaptureProcess() {
             if (!stream) {
                 showCustomAlert("Kamera Belum Siap", "Mohon tunggu hingga kamera aktif sepenuhnya.");
@@ -445,6 +548,7 @@
             }
         }
 
+        // Fungsi Hitung Mundur (Countdown)
         function runCountdown(seconds, callback) {
             isCountingDown = true;
             const countdownOverlay = document.getElementById('countdownOverlay');
@@ -467,6 +571,7 @@
             }, 1000);
         }
 
+        // Eksekusi Tangkapan Foto Sesuai Kotak Pratinjau (Termasuk Overlay)
         function executeCapture() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -493,9 +598,9 @@
                 sy = (vh - sh) / 2;
             }
 
-            if (currentCameraZoom > 1) {
-                const swZoomed = sw / currentCameraZoom;
-                const shZoomed = sh / currentCameraZoom;
+            if (currentZoom > 1) {
+                const swZoomed = sw / currentZoom;
+                const shZoomed = sh / currentZoom;
                 sx += (sw - swZoomed) / 2;
                 sy += (sh - shZoomed) / 2;
                 sw = swZoomed;
@@ -508,7 +613,7 @@
             canvas.width = outputWidth;
             canvas.height = outputHeight;
 
-            // 1. Draw Video Frame
+            // 1. Gambar Stream Kamera
             context.save();
             if (facingMode === 'user') {
                 context.translate(canvas.width, 0);
@@ -517,57 +622,77 @@
             context.drawImage(videoEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
             context.restore();
 
-            // 2. Draw Custom Overlay Image at its Exact Position, Scale, and Opacity
-            if (overlayDataUrl && overlayImage.complete) {
+            // 2. Gambar Overlay ke Canvas (jika ada) sesuai posisi, skala, & transparansi
+            if (overlayDataUrl && overlayImage.complete && overlayImage.naturalWidth > 0) {
                 context.save();
-                const scaleRatio = canvas.width / cw;
+                context.globalAlpha = parseFloat(document.getElementById('opacityRange').value);
 
-                const cx = canvas.width / 2 + (overlayX * scaleRatio);
-                const cy = canvas.height / 2 + (overlayY * scaleRatio);
+                const scaleRatioX = canvas.width / cw;
+                const scaleRatioY = canvas.height / ch;
 
-                context.translate(cx, cy);
-                context.scale(overlayScale, overlayScale);
+                const imgW = overlayImage.naturalWidth;
+                const imgH = overlayImage.naturalHeight;
+                const cAspect = cw / ch;
+                const imgAspect = imgW / imgH;
 
-                const imgNaturalW = overlayImage.naturalWidth;
-                const imgNaturalH = overlayImage.naturalHeight;
-                const imgAspect = imgNaturalW / imgNaturalH;
-                const containerAspect = cw / ch;
-                let drawW, drawH;
-
-                if (imgAspect > containerAspect) {
-                    drawW = cw;
-                    drawH = cw / imgAspect;
+                let baseW, baseH;
+                if (imgAspect > cAspect) {
+                    baseW = cw;
+                    baseH = cw / imgAspect;
                 } else {
-                    drawH = ch;
-                    drawW = ch * imgAspect;
+                    baseH = ch;
+                    baseW = ch * imgAspect;
                 }
 
-                const finalDrawW = drawW * scaleRatio;
-                const finalDrawH = drawH * scaleRatio;
+                const finalW = baseW * overlayScale * scaleRatioX;
+                const finalH = baseH * overlayScale * scaleRatioY;
+                const finalX = (canvas.width - finalW) / 2 + (overlayX * scaleRatioX);
+                const finalY = (canvas.height - finalH) / 2 + (overlayY * scaleRatioY);
 
-                context.globalAlpha = parseFloat(document.getElementById('opacityRange').value);
-                context.drawImage(overlayImage, -finalDrawW / 2, -finalDrawH / 2, finalDrawW, finalDrawH);
+                context.drawImage(overlayImage, finalX, finalY, finalW, finalH);
                 context.restore();
             }
 
-            finalizeAndDownload(canvas);
+            finalizeAndSaveToGallery(canvas);
         }
 
-        function finalizeAndDownload(canvas) {
-            const dataURL = canvas.toDataURL('image/png');
+        // Simpan ke galeri menggunakan Web Share API / Download Fallback
+        function finalizeAndSaveToGallery(canvas) {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `CamOverlay-${currentRatio.replace(':', '-')}-${timestamp}.png`;
+            const filename = `CamCapture-${currentRatio.replace(':', '-')}-${timestamp}.png`;
 
-            const link = document.createElement('a');
-            link.href = dataURL;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const file = new File([blob], filename, { type: 'image/png' });
 
-            showCustomAlert("Berhasil!", "Foto dengan overlay berhasil disimpan!", "success");
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Hasil Foto CamOverlay',
+                            text: 'Foto diambil menggunakan CamOverlay Pro'
+                        });
+                        showCustomAlert("Berhasil!", "Foto berhasil disimpan ke perangkat.", "success");
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                const dataURL = URL.createObjectURL(blob);
+                const linkEl = document.createElement('a');
+                linkEl.href = dataURL;
+                linkEl.download = filename;
+                document.body.appendChild(linkEl);
+                linkEl.click();
+                document.body.removeChild(linkEl);
+                URL.revokeObjectURL(dataURL);
+
+                showCustomAlert("Berhasil!", "Foto kamera berhasil diunduh ke penyimpanan.", "success");
+            }, 'image/png');
         }
 
+        // Pengelolaan Modal Kustom
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
         }
