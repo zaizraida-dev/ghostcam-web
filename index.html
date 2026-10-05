@@ -48,15 +48,20 @@
 
     <!-- Area Utama Kamera & Overlay -->
     <main class="relative flex-1 flex items-center justify-center overflow-hidden w-full max-w-4xl mx-auto my-auto px-4">
-        <!-- Wrapper Kamera dengan Rasio Dinamis -->
-        <div id="cameraWrapper" class="relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300">
+        <!-- Wrapper Kamera dengan Rasio Dinamis (Mendukung Pinch-to-Zoom 2 Jari) -->
+        <div id="cameraWrapper" class="relative w-full max-w-md aspect-[3/4] bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none">
             
-            <!-- Video Stream dari Webcam -->
-            <video id="videoElement" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
+            <!-- Video Stream dari Webcam (Menggunakan object-contain agar tidak terpotong) -->
+            <video id="videoElement" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black transition-transform duration-75"></video>
 
-            <!-- Gambar Overlay Referensi (Hanya Tampil di Preview, Tidak Ikut Ter-capture) -->
+            <!-- Gambar Overlay Referensi (Hanya Tampil di Preview, Ikut Zoom) -->
             <div id="overlayContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden hidden">
-                <img id="overlayImage" src="" alt="Overlay" class="max-w-full max-h-full object-contain transition-opacity duration-150" style="opacity: 0.5;">
+                <img id="overlayImage" src="" alt="Overlay" class="max-w-full max-h-full object-contain transition-transform duration-75" style="opacity: 0.5;">
+            </div>
+
+            <!-- Indikator Zoom (Muncul Saat Dzoom) -->
+            <div id="zoomIndicator" class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-amber-400 border border-neutral-700 hidden z-30">
+                <span id="zoomText">1.0x</span>
             </div>
 
             <!-- Hitung Mundur (Countdown Overlay) -->
@@ -65,7 +70,7 @@
             </div>
 
             <!-- Placeholder Jika Kamera Belum Siap / Error -->
-            <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-neutral-900 text-neutral-400">
+            <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-neutral-900 text-neutral-400 z-40">
                 <i class="fa-solid fa-camera text-4xl mb-3 text-neutral-600 animate-pulse"></i>
                 <p class="text-sm font-medium">Memuat Kamera...</p>
                 <button onclick="initCamera()" class="mt-4 bg-amber-500 hover:bg-amber-400 text-neutral-950 px-4 py-2 rounded-xl text-xs font-bold transition">
@@ -126,9 +131,9 @@
             </div>
             <div class="text-xs text-neutral-300 space-y-2 leading-relaxed">
                 <p>1. <b>Beri Akses Kamera</b> ketika browser meminta izin.</p>
-                <p>2. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk acuan/jejak panduan visual di layar.</p>
-                <p>3. Gambar overlay <b>hanya tampil di layar pratinjau</b> dan otomatis dipisahkan saat mengambil foto (tidak ikut tersimpan).</p>
-                <p>4. Gunakan fitur <b>Timer</b> atau langsung tekan tombol jepret bundar putih di tengah.</p>
+                <p>2. <b>Pinch-to-Zoom (2 Jari):</b> Sentuh layar kamera dengan dua jari lalu renggangkan untuk Zoom In atau rapatkan untuk Zoom Out.</p>
+                <p>3. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk acuan/jejak panduan visual di layar.</p>
+                <p>4. Gambar overlay <b>hanya tampil di layar pratinjau</b> dan otomatis dipisahkan saat mengambil foto.</p>
             </div>
             <button onclick="closeModal('infoModal')" class="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-2.5 rounded-xl text-xs transition">
                 Mengerti
@@ -161,6 +166,9 @@
         let timerSeconds = 0; // 0, 3, 5
         let isCountingDown = false;
         let overlayDataUrl = null;
+        let currentZoom = 1;
+        let initialTouchDistance = null;
+        let baseZoom = 1;
 
         const videoEl = document.getElementById('videoElement');
         const cameraWrapper = document.getElementById('cameraWrapper');
@@ -169,10 +177,13 @@
         const overlayImage = document.getElementById('overlayImage');
         const opacityControlPanel = document.getElementById('opacityControlPanel');
         const removeOverlayBtn = document.getElementById('removeOverlayBtn');
+        const zoomIndicator = document.getElementById('zoomIndicator');
+        const zoomText = document.getElementById('zoomText');
 
         // Inisialisasi Kamera saat Halaman Dimuat
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
+            initZoomGestures();
         });
 
         // Fungsi Membuka Kamera via getUserMedia API
@@ -194,12 +205,9 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoEl.srcObject = stream;
                 
-                // Mengatur efek mirror (pencerminan) khusus untuk kamera depan
-                if (facingMode === 'user') {
-                    videoEl.style.transform = 'scaleX(-1)';
-                } else {
-                    videoEl.style.transform = 'scaleX(1)';
-                }
+                // Reset zoom saat ganti kamera
+                currentZoom = 1;
+                updateVideoTransform();
 
                 videoEl.onloadedmetadata = () => {
                     cameraPlaceholder.classList.add('hidden');
@@ -207,7 +215,61 @@
             } catch (error) {
                 console.error("Gagal mengakses kamera:", error);
                 showCustomAlert("Akses Kamera Ditolak", "Pastikan Anda memberikan izin akses kamera pada browser atau gunakan HTTPS/Localhost.");
-                cameraPlaceholder.classList.add('hidden');
+                cameraPlaceholder.classList.remove('hidden');
+            }
+        }
+
+        // Pengaturan Fitur Pinch-to-Zoom (2 Jari)
+        function initZoomGestures() {
+            cameraWrapper.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    initialTouchDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    baseZoom = currentZoom;
+                }
+            }, { passive: true });
+
+            cameraWrapper.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && initialTouchDistance !== null) {
+                    const currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const factor = currentDistance / initialTouchDistance;
+                    currentZoom = Math.min(Math.max(baseZoom * factor, 1), 4); // Batas Zoom 1x s.d 4x
+
+                    updateVideoTransform();
+                }
+            }, { passive: true });
+
+            cameraWrapper.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    initialTouchDistance = null;
+                    // Sembunyikan indikator zoom setelah beberapa detik jika kembali ke 1x
+                    if (currentZoom <= 1.05) {
+                        currentZoom = 1;
+                        updateVideoTransform();
+                        setTimeout(() => {
+                            if (currentZoom === 1) zoomIndicator.classList.add('hidden');
+                        }, 1000);
+                    }
+                }
+            }, { passive: true });
+        }
+
+        // Perbarui Transformasi CSS untuk Video & Overlay serta Indikator Zoom
+        function updateVideoTransform() {
+            const scaleX = facingMode === 'user' ? -currentZoom : currentZoom;
+            videoEl.style.transform = `scaleX(${scaleX}) scaleY(${currentZoom})`;
+            overlayImage.style.transform = `scale(${currentZoom})`;
+
+            if (currentZoom > 1.02) {
+                zoomText.innerText = `${currentZoom.toFixed(1)}x`;
+                zoomIndicator.classList.remove('hidden');
+            } else {
+                zoomIndicator.classList.add('hidden');
             }
         }
 
@@ -220,18 +282,21 @@
 
         // Putar Pilihan Rasio Aspek (4:3 -> 9:16 -> 1:1)
         function cycleRatio() {
+            currentZoom = 1; // Reset zoom saat ganti rasio
+            zoomIndicator.classList.add('hidden');
+
             if (currentRatio === '4:3') {
                 currentRatio = '9:16';
-                // Diperlebar menggunakan max-w-sm agar area tangkapan 9:16 tidak terlalu sempit/kepotong
-                cameraWrapper.className = "relative w-full max-w-sm aspect-[9/16] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
+                cameraWrapper.className = "relative w-full max-w-sm aspect-[9/16] bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             } else if (currentRatio === '9:16') {
                 currentRatio = '1:1';
-                cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
+                cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             } else {
                 currentRatio = '4:3';
-                cameraWrapper.className = "relative w-full max-w-md aspect-[3/4] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
+                cameraWrapper.className = "relative w-full max-w-md aspect-[3/4] bg-black overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300 touch-none";
             }
             document.getElementById('ratioText').innerText = currentRatio;
+            updateVideoTransform();
         }
 
         // Putar Pilihan Timer (OFF -> 3s -> 5s)
@@ -321,12 +386,11 @@
             }, 1000);
         }
 
-        // Eksekusi Pengambilan Gambar HANYA dari Video Stream Kamera (Overlay Tidak Disertakan)
+        // Eksekusi Pengambilan Gambar (Mendukung Zoom level saat ini)
         function executeCapture() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
 
-            // Ambil ukuran asli video stream kamera
             const videoWidth = videoEl.videoWidth || 1080;
             const videoHeight = videoEl.videoHeight || 1920;
 
@@ -334,14 +398,26 @@
             canvas.height = videoHeight;
 
             context.save();
-            // Jika menggunakan kamera depan, balikkan hasil canvas agar sesuai dengan preview (mirror)
             if (facingMode === 'user') {
                 context.translate(canvas.width, 0);
                 context.scale(-1, 1);
             }
 
-            // Gambar frame video murni ke canvas tanpa menyertakan overlay
-            context.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            // Jika sedang zoom, potong bagian video yang sesuai dengan tingkat zoom
+            if (currentZoom > 1) {
+                const cropWidth = videoWidth / currentZoom;
+                const cropHeight = videoHeight / currentZoom;
+                const cropX = (videoWidth - cropWidth) / 2;
+                const cropY = (videoHeight - cropHeight) / 2;
+
+                context.drawImage(
+                    videoEl,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, canvas.width, canvas.height
+                );
+            } else {
+                context.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            }
             context.restore();
 
             finalizeAndDownload(canvas);
