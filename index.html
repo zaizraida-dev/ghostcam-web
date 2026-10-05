@@ -138,7 +138,7 @@
                 <p>1. <b>Beri Akses Kamera</b> ketika browser meminta izin.</p>
                 <p>2. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk panduan visual di layar.</p>
                 <p>3. <b>Zoom In/Out:</b> Gunakan gestur 2 jari (cubit ke dalam/luar) pada area kamera.</p>
-                <p>4. Hasil foto akan otomatis ter-crop presisi sesuai rasio yang dipilih (4:3, 9:16, atau 1:1).</p>
+                <p>4. Hasil foto akan otomatis tersimpan langsung ke perangkat Anda.</p>
             </div>
             <button onclick="closeModal('infoModal')" class="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-2.5 rounded-xl text-xs transition">
                 Mengerti
@@ -223,9 +223,7 @@
                     maxZoom = 4;
                 }
                 
-                // Perbaikan: Set default ke 1.0x (normal) agar tidak otomatis ke 0.5x / zoom out
                 currentZoom = 1; 
-                
                 updateVideoTransform();
 
                 videoEl.onloadedmetadata = () => {
@@ -299,7 +297,6 @@
                 }
             }, { passive: true });
 
-            // Dukungan Mouse Wheel untuk Zoom di Desktop / Laptop
             cameraWrapper.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 let newZoom = currentZoom + (e.deltaY < 0 ? 0.2 : -0.2);
@@ -416,7 +413,7 @@
             }, 1000);
         }
 
-        // Eksekusi Tangkapan Foto Sesuai Kotak Pratinjau (Container Aspect Ratio & Zoom)
+        // Eksekusi Tangkapan Foto Sesuai Kotak Pratinjau
         function executeCapture() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -424,7 +421,6 @@
             const vw = videoEl.videoWidth || 1280;
             const vh = videoEl.videoHeight || 720;
 
-            // Ambil ukuran & rasio persis dari kotak pratinjau yang sedang aktif di layar
             const cw = cameraWrapper.clientWidth;
             const ch = cameraWrapper.clientHeight;
             const containerAspect = cw / ch;
@@ -432,7 +428,6 @@
             const videoAspect = vw / vh;
             let sx = 0, sy = 0, sw = vw, sh = vh;
 
-            // Kalkulasi object-fit: cover berdasarkan kotak pratinjau
             if (videoAspect > containerAspect) {
                 sh = vh;
                 sw = vh * containerAspect;
@@ -445,7 +440,6 @@
                 sy = (vh - sh) / 2;
             }
 
-            // Perhitungan Zoom (jika user melakukan zoom in/out)
             if (currentZoom > 1) {
                 const swZoomed = sw / currentZoom;
                 const shZoomed = sh / currentZoom;
@@ -455,7 +449,6 @@
                 sh = shZoomed;
             }
 
-            // Resolusi output hasil foto agar tajam
             const outputHeight = 1920;
             const outputWidth = Math.round(outputHeight * containerAspect);
 
@@ -463,7 +456,6 @@
             canvas.height = outputHeight;
 
             context.save();
-            // Jika kamera depan, balikkan secara horizontal agar hasil foto sesuai dengan preview di layar
             if (facingMode === 'user') {
                 context.translate(canvas.width, 0);
                 context.scale(-1, 1);
@@ -471,23 +463,47 @@
             context.drawImage(videoEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
             context.restore();
 
-            finalizeAndDownload(canvas);
+            finalizeAndSaveToGallery(canvas);
         }
 
-        // Konversi Canvas Menjadi File PNG & Trigger Download Otomatis
-        function finalizeAndDownload(canvas) {
-            const dataURL = canvas.toDataURL('image/png');
+        // Peningkatan: Simpan langsung ke galeri menggunakan Web Share API / Download Fallback
+        function finalizeAndSaveToGallery(canvas) {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `CamCapture-${currentRatio.replace(':', '-')}-${timestamp}.png`;
 
-            const link = document.createElement('a');
-            link.href = dataURL;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const file = new File([blob], filename, { type: 'image/png' });
 
-            showCustomAlert("Berhasil!", "Foto kamera berhasil diunduh dengan rasio " + currentRatio, "success");
+                // Coba gunakan Web Share API jika didukung perangkat seluler (Membuka menu langsung simpan gambar ke galeri)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Hasil Foto CamOverlay',
+                            text: 'Foto diambil menggunakan CamOverlay Pro'
+                        });
+                        showCustomAlert("Berhasil!", "Foto berhasil disimpan ke perangkat.", "success");
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            return; // Dibatalkan oleh pengguna
+                        }
+                    }
+                }
+
+                // Fallback otomatis unduh file jika Web Share API tidak tersedia
+                const dataURL = URL.createObjectURL(blob);
+                const linkEl = document.createElement('a');
+                linkEl.href = dataURL;
+                linkEl.download = filename;
+                document.body.appendChild(linkEl);
+                linkEl.click();
+                document.body.removeChild(linkEl);
+                URL.revokeObjectURL(dataURL);
+
+                showCustomAlert("Berhasil!", "Foto kamera berhasil diunduh ke penyimpanan.", "success");
+            }, 'image/png');
         }
 
         // Pengelolaan Modal Kustom
