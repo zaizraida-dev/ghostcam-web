@@ -94,15 +94,16 @@
 
     <!-- Bagian Bawah: Tombol Aksi Utama -->
     <footer class="w-full z-20 bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-4 pb-8 px-6">
-        <div class="max-w-md mx-auto flex items-center justify-between px-2">
+        <div class="max-w-md mx-auto flex items-center justify-around">
             
-            <!-- Tombol Thumbnail Galeri Sesi (Kiri Tombol Jepret) -->
-            <button onclick="openGalleryModal()" id="galleryThumbnailBtn" class="w-12 h-12 rounded-full bg-neutral-800 border-2 border-neutral-700 overflow-hidden flex items-center justify-center relative shadow-lg group opacity-50 pointer-events-none transition hover:border-amber-400" disabled>
-                <img id="thumbnailPreview" src="" alt="Gallery" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-black/30 group-hover:bg-transparent transition flex items-center justify-center">
-                    <i class="fa-solid fa-images text-white text-xs drop-shadow"></i>
+            <!-- Tombol Pilih Gambar Overlay -->
+            <label class="flex flex-col items-center gap-1 cursor-pointer group">
+                <div class="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 group-hover:bg-neutral-700 group-hover:border-neutral-600 transition shadow-md">
+                    <i class="fa-solid fa-image text-lg"></i>
                 </div>
-            </button>
+                <span class="text-[11px] font-medium text-neutral-400 group-hover:text-white">Pilih Overlay</span>
+                <input type="file" id="imageUploader" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+            </label>
 
             <!-- Tombol Jepret Foto Utama -->
             <button onclick="startCaptureProcess()" id="captureBtn" class="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition relative group">
@@ -111,64 +112,16 @@
                 </div>
             </button>
 
-            <!-- Kontrol Samping Kanan (Pilih Overlay & Hapus Overlay) -->
-            <div class="flex items-center gap-3">
-                <!-- Tombol Pilih Gambar Overlay -->
-                <label class="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 hover:bg-neutral-700 hover:border-neutral-600 transition shadow-md cursor-pointer">
-                    <i class="fa-solid fa-image text-sm"></i>
-                    <input type="file" id="imageUploader" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                </label>
-
-                <!-- Tombol Hapus Overlay / Reset -->
-                <button onclick="removeOverlay()" id="removeOverlayBtn" class="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-red-400 hover:bg-neutral-700 hover:border-neutral-600 transition shadow-md opacity-50 pointer-events-none" disabled>
-                    <i class="fa-solid fa-trash text-sm"></i>
-                </button>
-            </div>
+            <!-- Tombol Hapus Overlay / Reset -->
+            <button onclick="removeOverlay()" id="removeOverlayBtn" class="flex flex-col items-center gap-1 cursor-pointer group opacity-50 pointer-events-none transition" disabled>
+                <div class="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-red-400 group-hover:bg-neutral-700 group-hover:border-neutral-600 transition shadow-md">
+                    <i class="fa-solid fa-trash text-lg"></i>
+                </div>
+                <span class="text-[11px] font-medium text-neutral-400 group-hover:text-white">Hapus Overlay</span>
+            </button>
 
         </div>
     </footer>
-
-    <!-- Modal Galeri Foto Sesi -->
-    <div id="galleryModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col hidden">
-        <div class="flex items-center justify-between p-4 border-b border-neutral-800">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-images text-amber-400"></i> Galeri Sesi Ini (<span id="photoCount">0</span>)
-            </h3>
-            <button onclick="closeModal('galleryModal')" class="text-neutral-400 hover:text-white text-base px-2 py-1">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <!-- Grid Hasil Foto -->
-        <div id="galleryGrid" class="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start">
-            <!-- Diisi dinamis via JS -->
-        </div>
-        <div class="p-4 border-t border-neutral-800 flex justify-between items-center bg-neutral-900/50">
-            <button onclick="clearGallery()" class="text-xs text-red-400 hover:text-red-300 font-semibold flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 transition">
-                <i class="fa-solid fa-trash-can"></i> Hapus Semua
-            </button>
-            <button onclick="closeModal('galleryModal')" class="bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
-                Tutup
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal Viewer Detail Foto -->
-    <div id="photoViewerModal" class="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4 hidden">
-        <button onclick="closeModal('photoViewerModal')" class="absolute top-4 right-4 text-neutral-400 hover:text-white text-xl p-2 z-10">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-        <div class="relative max-w-lg max-h-[70vh] w-full flex items-center justify-center overflow-hidden rounded-xl bg-neutral-900 border border-neutral-800 shadow-2xl">
-            <img id="viewerImage" src="" alt="Detail Foto" class="max-w-full max-h-[70vh] object-contain">
-        </div>
-        <div class="flex items-center gap-3 mt-6">
-            <button onclick="downloadCurrentPhoto()" class="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 transition shadow-lg">
-                <i class="fa-solid fa-download"></i> Unduh Ulang
-            </button>
-            <button onclick="deleteCurrentPhoto()" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 transition border border-red-500/30">
-                <i class="fa-solid fa-trash"></i> Hapus Foto
-            </button>
-        </div>
-    </div>
 
     <!-- Modal Informasi Panduan -->
     <div id="infoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -183,8 +136,9 @@
             </div>
             <div class="text-xs text-neutral-300 space-y-2 leading-relaxed">
                 <p>1. <b>Beri Akses Kamera</b> ketika browser meminta izin.</p>
-                <p>2. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk panduan visual.</p>
-                <p>3. <b>Galeri Sesi:</b> Ketuk kotak kecil di sebelah kiri tombol jepret untuk melihat daftar foto yang sudah diambil.</p>
+                <p>2. <b>Pilih Gambar Overlay</b> transparan (PNG/JPG) untuk panduan visual di layar.</p>
+                <p>3. <b>Zoom In/Out:</b> Gunakan gestur 2 jari (cubit ke dalam/luar) pada area kamera.</p>
+                <p>4. Hasil foto akan otomatis tersimpan langsung ke perangkat Anda.</p>
             </div>
             <button onclick="closeModal('infoModal')" class="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-2.5 rounded-xl text-xs transition">
                 Mengerti
@@ -208,19 +162,17 @@
         </div>
     </div>
 
-    <!-- Logika JavaScript Web App Kamera & Galeri -->
+    <!-- Logika JavaScript Web App Kamera & Overlay -->
     <script>
+        // Variabel Status Aplikasi
         let stream = null;
-        let facingMode = 'user';
-        let currentRatio = '4:3';
-        let timerSeconds = 0;
+        let facingMode = 'user'; // 'user' (depan) atau 'environment' (belakang)
+        let currentRatio = '4:3'; // '4:3', '9:16', '1:1'
+        let timerSeconds = 0; // 0, 3, 5
         let isCountingDown = false;
         let overlayDataUrl = null;
 
-        // Penyimpanan Galeri Sesi
-        let capturedPhotos = [];
-        let activePhotoIndex = null;
-
+        // Variabel Zoom & Pinch
         let currentZoom = 1;
         let minZoom = 1;
         let maxZoom = 4;
@@ -236,11 +188,13 @@
         const removeOverlayBtn = document.getElementById('removeOverlayBtn');
         const zoomBadge = document.getElementById('zoomBadge');
 
+        // Inisialisasi Kamera saat Halaman Dimuat
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
             setupPinchZoom();
         });
 
+        // Fungsi Membuka Kamera via getUserMedia API
         async function initCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
@@ -277,17 +231,19 @@
                 };
             } catch (error) {
                 console.error("Gagal mengakses kamera:", error);
-                showCustomAlert("Akses Kamera Ditolak", "Pastikan Anda memberikan izin akses kamera pada browser.");
+                showCustomAlert("Akses Kamera Ditolak", "Pastikan Anda memberikan izin akses kamera pada browser atau gunakan HTTPS/Localhost.");
                 cameraPlaceholder.classList.remove('hidden');
             }
         }
 
+        // Toggle Kamera Depan / Belakang
         function toggleCameraFacing() {
             facingMode = facingMode === 'user' ? 'environment' : 'user';
             document.getElementById('facingText').innerText = facingMode === 'user' ? 'Depan' : 'Belakang';
             initCamera();
         }
 
+        // Putar Pilihan Rasio Aspek (4:3 -> 9:16 -> 1:1)
         function cycleRatio() {
             if (currentRatio === '4:3') {
                 currentRatio = '9:16';
@@ -302,6 +258,7 @@
             document.getElementById('ratioText').innerText = currentRatio;
         }
 
+        // Putar Pilihan Timer (OFF -> 3s -> 5s)
         function cycleTimer() {
             if (timerSeconds === 0) {
                 timerSeconds = 3;
@@ -313,6 +270,7 @@
             document.getElementById('timerText').innerText = timerSeconds === 0 ? 'OFF' : `${timerSeconds}s`;
         }
 
+        // Pengaturan Touch & Pinch to Zoom (2 Jari)
         function setupPinchZoom() {
             cameraWrapper.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
@@ -381,6 +339,7 @@
             }, 1200);
         }
 
+        // Upload Gambar Overlay dari Perangkat
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -398,6 +357,7 @@
             reader.readAsDataURL(file);
         }
 
+        // Hapus / Reset Gambar Overlay
         function removeOverlay() {
             overlayDataUrl = null;
             overlayImage.src = "";
@@ -409,11 +369,13 @@
             removeOverlayBtn.classList.add('opacity-50', 'pointer-events-none');
         }
 
+        // Ubah Transparansi Overlay Secara Real-time
         function updateOpacity(val) {
             overlayImage.style.opacity = val;
             document.getElementById('opacityValue').innerText = `${Math.round(val * 100)}%`;
         }
 
+        // Proses Tombol Jepret dengan Dukungan Timer
         function startCaptureProcess() {
             if (!stream) {
                 showCustomAlert("Kamera Belum Siap", "Mohon tunggu hingga kamera aktif sepenuhnya.");
@@ -428,6 +390,7 @@
             }
         }
 
+        // Fungsi Hitung Mundur (Countdown)
         function runCountdown(seconds, callback) {
             isCountingDown = true;
             const countdownOverlay = document.getElementById('countdownOverlay');
@@ -450,6 +413,7 @@
             }, 1000);
         }
 
+        // Eksekusi Tangkapan Foto Sesuai Kotak Pratinjau
         function executeCapture() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -502,19 +466,16 @@
             finalizeAndSaveToGallery(canvas);
         }
 
+        // Peningkatan: Simpan langsung ke galeri menggunakan Web Share API / Download Fallback
         function finalizeAndSaveToGallery(canvas) {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `CamCapture-${currentRatio.replace(':', '-')}-${timestamp}.png`;
-            const dataURL = canvas.toDataURL('image/png');
-
-            // Simpan ke array galeri sesi
-            capturedPhotos.unshift({ id: Date.now(), dataUrl: dataURL, filename: filename });
-            updateGalleryThumbnail();
 
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
                 const file = new File([blob], filename, { type: 'image/png' });
 
+                // Coba gunakan Web Share API jika didukung perangkat seluler (Membuka menu langsung simpan gambar ke galeri)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -522,103 +483,30 @@
                             title: 'Hasil Foto CamOverlay',
                             text: 'Foto diambil menggunakan CamOverlay Pro'
                         });
+                        showCustomAlert("Berhasil!", "Foto berhasil disimpan ke perangkat.", "success");
                         return;
                     } catch (err) {
-                        if (err.name === 'AbortError') return;
+                        if (err.name === 'AbortError') {
+                            return; // Dibatalkan oleh pengguna
+                        }
                     }
                 }
 
-                // Fallback download
+                // Fallback otomatis unduh file jika Web Share API tidak tersedia
+                const dataURL = URL.createObjectURL(blob);
                 const linkEl = document.createElement('a');
                 linkEl.href = dataURL;
                 linkEl.download = filename;
                 document.body.appendChild(linkEl);
                 linkEl.click();
                 document.body.removeChild(linkEl);
+                URL.revokeObjectURL(dataURL);
+
+                showCustomAlert("Berhasil!", "Foto kamera berhasil diunduh ke penyimpanan.", "success");
             }, 'image/png');
         }
 
-        // Fungsi Pengelolaan Galeri Sesi
-        function updateGalleryThumbnail() {
-            const btn = document.getElementById('galleryThumbnailBtn');
-            const img = document.getElementById('thumbnailPreview');
-            if (capturedPhotos.length > 0) {
-                img.src = capturedPhotos[0].dataUrl;
-                btn.removeAttribute('disabled');
-                btn.classList.remove('opacity-50', 'pointer-events-none');
-            } else {
-                img.src = '';
-                btn.setAttribute('disabled', 'true');
-                btn.classList.add('opacity-50', 'pointer-events-none');
-            }
-        }
-
-        function openGalleryModal() {
-            renderGalleryGrid();
-            openModal('galleryModal');
-        }
-
-        function renderGalleryGrid() {
-            const grid = document.getElementById('galleryGrid');
-            document.getElementById('photoCount').innerText = capturedPhotos.length;
-            
-            if (capturedPhotos.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center py-20 text-neutral-500 gap-2">
-                        <i class="fa-solid fa-image text-4xl mb-1 text-neutral-600"></i>
-                        <p class="text-xs font-medium">Belum ada foto yang dijepret.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = capturedPhotos.map((photo, index) => `
-                <div onclick="openPhotoViewer(${index})" class="relative aspect-[3/4] bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 cursor-pointer group shadow-md hover:border-amber-500/50 transition">
-                    <img src="${photo.dataUrl}" alt="Capture" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                </div>
-            `).join('');
-        }
-
-        function openPhotoViewer(index) {
-            activePhotoIndex = index;
-            const photo = capturedPhotos[index];
-            document.getElementById('viewerImage').src = photo.dataUrl;
-            openModal('photoViewerModal');
-        }
-
-        function downloadCurrentPhoto() {
-            if (activePhotoIndex === null) return;
-            const photo = capturedPhotos[activePhotoIndex];
-            const link = document.createElement('a');
-            link.href = photo.dataUrl;
-            link.download = photo.filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showCustomAlert("Berhasil", "Foto berhasil diunduh ulang.", "success");
-        }
-
-        function deleteCurrentPhoto() {
-            if (activePhotoIndex === null) return;
-            capturedPhotos.splice(activePhotoIndex, 1);
-            updateGalleryThumbnail();
-            closeModal('photoViewerModal');
-            renderGalleryGrid();
-            if (capturedPhotos.length === 0) {
-                closeModal('galleryModal');
-            }
-            showCustomAlert("Terhapus", "Foto dihapus dari galeri sesi.", "success");
-        }
-
-        function clearGallery() {
-            if (confirm("Yakin ingin menghapus semua foto di galeri sesi ini?")) {
-                capturedPhotos = [];
-                updateGalleryThumbnail();
-                closeModal('galleryModal');
-                showCustomAlert("Kosong", "Semua foto sesi telah dibersihkan.", "success");
-            }
-        }
-
+        // Pengelolaan Modal Kustom
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
         }
