@@ -157,7 +157,7 @@
         // Variabel Status Aplikasi
         let stream = null;
         let facingMode = 'user'; // 'user' (depan) atau 'environment' (belakang)
-        let currentRatio = '4:3'; // '4:3', '16:9', '1:1'
+        let currentRatio = '4:3'; // '4:3', '9:16', '1:1'
         let timerSeconds = 0; // 0, 3, 5
         let isCountingDown = false;
         let overlayDataUrl = null;
@@ -211,12 +211,12 @@
             initCamera();
         }
 
-        // Putar Pilihan Rasio Aspek (4:3 -> 16:9 -> 1:1)
+        // Putar Pilihan Rasio Aspek (4:3 -> 9:16 -> 1:1)
         function cycleRatio() {
             if (currentRatio === '4:3') {
-                currentRatio = '16:9';
+                currentRatio = '9:16';
                 cameraWrapper.className = "relative w-full max-w-lg aspect-[16/9] bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
-            } else if (currentRatio === '16:9') {
+            } else if (currentRatio === '9:16') {
                 currentRatio = '1:1';
                 cameraWrapper.className = "relative w-full max-w-sm aspect-square bg-neutral-900 overflow-hidden shadow-2xl rounded-2xl border border-neutral-800 flex items-center justify-center transition-all duration-300";
             } else {
